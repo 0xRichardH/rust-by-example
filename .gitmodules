@@ -1,0 +1,3 @@
+[submodule "pg-example-rs"]
+	path = pg-example-rs
+	url = git@github.com:0x4richard/pg-example-rs.git
