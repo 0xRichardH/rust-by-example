@@ -5,6 +5,19 @@ struct User {
     age: Option<u8>,
 }
 
+trait Human {
+    fn speak(self);
+}
+
+impl Human for User {
+    fn speak(self) {
+        println!("{:?}", self);
+        println!("email: {}", self.email);
+        println!("name: {:?}", self.name.unwrap());
+        println!("age: {:?}", self.age.unwrap());
+    }
+}
+
 impl User {
     fn new(email: String) -> Self {
         Self {
@@ -28,8 +41,5 @@ fn main() {
     let user = User::new("richard@0xdev.dev".to_string())
         .with_name("richard".to_string())
         .with_age(29);
-    println!("{:?}", user);
-    println!("email: {}", user.email);
-    println!("name: {:?}", user.name.unwrap());
-    println!("age: {:?}", user.age.unwrap());
+    user.speak();
 }
