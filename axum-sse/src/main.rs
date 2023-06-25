@@ -1,21 +1,20 @@
-use std::{convert::Infallible, net::SocketAddr, time::Duration};
+mod handlers;
+
+use crate::handlers::{current_time, hello};
+
+use std::net::SocketAddr;
+use std::time::Duration;
 
 use axum::{
     body::Bytes,
     extract::MatchedPath,
     http::{HeaderMap, Request},
-    response::{
-        sse::{Event, KeepAlive},
-        Response, Sse,
-    },
+    response::Response,
     routing::get,
     Router,
 };
-pub(crate) use chrono::Utc;
-use futures_util::stream::{self, Stream};
-use serde_json::json;
+
 use tokio::signal;
-use tokio_stream::StreamExt;
 use tower_http::{classify::ServerErrorsFailureClass, trace::TraceLayer};
 use tracing::{info_span, Span};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -34,8 +33,8 @@ async fn main() {
         .init();
 
     let app = Router::new()
-        .route("/", get(hello_handler))
-        .route("/time", get(current_time_handler))
+        .route("/", get(hello::hello_handler))
+        .route("/time", get(current_time::current_time_handler))
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(|request: &Request<_>| {
@@ -110,24 +109,4 @@ async fn shutdown_signal() {
     }
 
     tracing::info!("signal received, starting graceful shutdown");
-}
-
-async fn hello_handler() -> &'static str {
-    "Hello World"
-}
-
-async fn current_time_handler() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
-    let stream = stream::repeat_with(|| {
-        let time = Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
-        tracing::info!("Time: {}", time);
-        let result = Event::default().json_data(json!({ "time": time }));
-        match result {
-            Ok(event) => event,
-            Err(_) => Event::default().data("error"),
-        }
-    })
-    .map(Ok)
-    .throttle(Duration::from_secs(1));
-
-    Sse::new(stream).keep_alive(KeepAlive::default())
 }
