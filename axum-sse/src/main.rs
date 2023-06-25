@@ -1,4 +1,4 @@
-use std::{convert::Infallible, time::Duration};
+use std::{convert::Infallible, net::SocketAddr, time::Duration};
 
 use axum::{
     body::Bytes,
@@ -77,8 +77,9 @@ async fn main() {
                 ),
         );
 
-    tracing::info!("Listening on 0.0.0.0:8080");
-    axum::Server::bind(&"0.0.0.0:8080".parse().unwrap())
+    let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
+    tracing::info!("Listening on {}", addr);
+    axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .with_graceful_shutdown(shutdown_signal())
         .await
@@ -117,7 +118,7 @@ async fn hello_handler() -> &'static str {
 
 async fn current_time_handler() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     let stream = stream::repeat_with(|| {
-        let time = Utc::now().format("%y-%m-%d %H:%M:%S").to_string();
+        let time = Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
         tracing::info!("Time: {}", time);
         let result = Event::default().json_data(json!({ "time": time }));
         match result {
