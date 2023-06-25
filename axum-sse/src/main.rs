@@ -2,9 +2,11 @@ mod handlers;
 
 use crate::handlers::{current_time, hello};
 
-use std::net::SocketAddr;
+use std::sync::Mutex;
 use std::time::Duration;
+use std::{net::SocketAddr, sync::Arc};
 
+use axum::routing::post;
 use axum::{
     body::Bytes,
     extract::MatchedPath,
@@ -15,9 +17,15 @@ use axum::{
 };
 
 use tokio::signal;
+use tokio::sync::oneshot;
 use tower_http::{classify::ServerErrorsFailureClass, trace::TraceLayer};
 use tracing::{info_span, Span};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+
+#[derive(Default, Clone)]
+pub struct AppState {
+    stream_handlers: Arc<Mutex<Vec<oneshot::Sender<()>>>>,
+}
 
 #[tokio::main]
 async fn main() {
@@ -32,9 +40,15 @@ async fn main() {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
+    let shared_state = AppState::default();
     let app = Router::new()
         .route("/", get(hello::hello_handler))
         .route("/time", get(current_time::current_time_handler))
+        .route(
+            "/terminate",
+            post(current_time::terminate_connections_handler),
+        )
+        .with_state(shared_state)
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(|request: &Request<_>| {
