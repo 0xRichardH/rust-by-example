@@ -41,7 +41,7 @@ async fn main() {
         .init();
 
     let shared_state = AppState::default();
-    let stream_handlers = shared_state.stream_handlers.to_owned();
+    let stream_handlers = Arc::clone(&shared_state.stream_handlers);
     let app = Router::new()
         .route("/", get(hello::hello_handler))
         .route("/time", get(current_time::current_time_handler))
