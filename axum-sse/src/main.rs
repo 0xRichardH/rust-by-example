@@ -41,6 +41,7 @@ async fn main() {
         .init();
 
     let shared_state = AppState::default();
+    let stream_handlers = shared_state.stream_handlers.to_owned();
     let app = Router::new()
         .route("/", get(hello::hello_handler))
         .route("/time", get(current_time::current_time_handler))
@@ -94,12 +95,12 @@ async fn main() {
     tracing::info!("Listening on {}", addr);
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
-        .with_graceful_shutdown(shutdown_signal())
+        .with_graceful_shutdown(shutdown_signal(stream_handlers))
         .await
         .unwrap();
 }
 
-async fn shutdown_signal() {
+async fn shutdown_signal(stream_handlers: Arc<Mutex<Vec<oneshot::Sender<()>>>>) {
     let ctrl_c = async {
         signal::ctrl_c()
             .await
@@ -117,9 +118,20 @@ async fn shutdown_signal() {
     #[cfg(not(unix))]
     let terminate = std::future::pending::<()>();
 
+    let clear_stream_handlers = || {
+        let handlers = std::mem::take(&mut *stream_handlers.lock().unwrap());
+        for tx in handlers {
+            _ = tx.send(());
+        }
+    };
+
     tokio::select! {
-        _ = ctrl_c => {},
-        _ = terminate => {},
+        _ = ctrl_c => {
+            clear_stream_handlers();
+        },
+        _ = terminate => {
+            clear_stream_handlers();
+        },
     }
 
     tracing::info!("signal received, starting graceful shutdown");
