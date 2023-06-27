@@ -13,8 +13,8 @@ impl Human for User {
     fn speak(self) {
         println!("{:?}", self);
         println!("email: {}", self.email);
-        println!("name: {:?}", self.name.unwrap());
-        println!("age: {:?}", self.age.unwrap());
+        println!("name: {:?}", self.name.unwrap_or_default());
+        println!("age: {:?}", self.age.unwrap_or_default());
     }
 }
 
@@ -39,7 +39,7 @@ impl User {
 
 fn main() {
     let user = User::new("richard@0xdev.dev".to_string())
-        .with_name("richard".to_string())
+        .with_name(String::from("Richard"))
         .with_age(29);
     user.speak();
 }
