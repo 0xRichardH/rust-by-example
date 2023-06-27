@@ -43,3 +43,49 @@ fn main() {
         .with_age(29);
     user.speak();
 }
+
+#[test]
+fn user_with_default_values() {
+    let email = "richard@0xdev.dev";
+    let user = User::new(String::from(email));
+
+    assert_eq!(email, user.email);
+    assert_eq!(None, user.name);
+    assert_eq!(None, user.age);
+}
+
+#[test]
+fn user_with_name() {
+    let email = "test@test.test";
+    let name = "Richard";
+    let user = User::new(String::from(email)).with_name(String::from(name));
+
+    assert_eq!(email, user.email);
+    assert_eq!(name, user.name.unwrap_or_default());
+    assert_eq!(None, user.age);
+}
+
+#[test]
+fn user_with_age() {
+    let email = "test@test.test";
+    let age = 29;
+    let user = User::new(String::from(email)).with_age(age);
+
+    assert_eq!(email, user.email);
+    assert_eq!(None, user.name);
+    assert_eq!(age, user.age.unwrap_or_default());
+}
+
+#[test]
+fn user_with_name_and_age() {
+    let email = "test@test.test";
+    let age = 29;
+    let name = "Richard";
+    let user = User::new(String::from(email))
+        .with_name(String::from(name))
+        .with_age(age);
+
+    assert_eq!(email, user.email);
+    assert_eq!(name, user.name.unwrap_or_default());
+    assert_eq!(age, user.age.unwrap_or_default());
+}
