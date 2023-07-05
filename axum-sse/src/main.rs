@@ -100,7 +100,7 @@ fn init_tracing_subscriber() {
                 "axum_sse=debug,tower_http=debug,axum::rejection=trace".into()
             }),
         )
-        .with(tracing_subscriber::fmt::layer())
+        .with(tracing_subscriber::fmt::layer().json())
         .init();
 }
 
