@@ -10,13 +10,15 @@ impl Query<BankAccount> for SimpleLoggingQuery {
     async fn dispatch(&self, aggregate_id: &str, events: &[EventEnvelope<BankAccount>]) {
         for event in events {
             println!("{}-{}\n{:#?}", aggregate_id, event.sequence, &event.payload);
+            println!("metadata => {:#?}", &event.metadata);
+            println!("===============================================");
         }
     }
 }
 
 #[cfg(test)]
 mod query_tests {
-    use std::vec;
+    use std::{collections::HashMap, vec};
 
     use anyhow::Result;
     use cqrs_es::{mem_store::MemStore, CqrsFramework};
@@ -34,6 +36,18 @@ mod query_tests {
         let cqrs = CqrsFramework::new(event_store, vec![Box::new(query)], service);
 
         let aggregate_id = "aggregate-instance-a";
+
+        // open account
+        let mut metadata = HashMap::new();
+        metadata.insert("time".to_string(), chrono::Utc::now().to_rfc3339());
+        cqrs.execute_with_metadata(
+            aggregate_id,
+            BankAccountCommand::OpenAccount {
+                account_id: String::from("test_account_id"),
+            },
+            metadata,
+        )
+        .await?;
 
         // deposit
         cqrs.execute(

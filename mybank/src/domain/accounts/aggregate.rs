@@ -9,6 +9,7 @@ use super::{
 
 #[derive(Serialize, Deserialize, Default)]
 pub struct BankAccount {
+    account_id: String,
     opened: bool,
     balance: f64,
 }
@@ -30,6 +31,10 @@ impl Aggregate for BankAccount {
         _services: &Self::Services,
     ) -> Result<Vec<Self::Event>, Self::Error> {
         match command {
+            BankAccountCommand::OpenAccount { account_id } => {
+                let event = BankAccountEvent::AccountOpened { account_id };
+                Ok(vec![event])
+            }
             BankAccountCommand::DepositMoney { amount } => {
                 let balance = self.balance + amount;
                 let event = BankAccountEvent::CustomerDepositedMoney { amount, balance };
@@ -50,7 +55,10 @@ impl Aggregate for BankAccount {
 
     fn apply(&mut self, event: Self::Event) {
         match event {
-            BankAccountEvent::AccountOpened { .. } => self.opened = true,
+            BankAccountEvent::AccountOpened { account_id } => {
+                self.account_id = account_id;
+                self.opened = true;
+            }
             BankAccountEvent::CustomerDepositedMoney { amount: _, balance } => {
                 self.balance = balance
             }

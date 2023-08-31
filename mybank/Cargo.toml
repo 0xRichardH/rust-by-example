@@ -8,6 +8,8 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.75"
 async-trait = "0.1.73"
+chrono = "0.4.28"
 cqrs-es = "0.4.9"
+postgres-es = "0.4.10"
 serde = { version = "1.0.188", features = ["derive"] }
 tokio = { version = "1.32.0", features = ["full"] }
