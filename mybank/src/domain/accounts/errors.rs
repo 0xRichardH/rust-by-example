@@ -1,11 +1,11 @@
-use std::{error::Error, fmt::Display, fs::write};
+use std::{error::Error, fmt::Display};
 
-#[derive(Debug)]
-pub struct BankAccountError(String);
+#[derive(Debug, PartialEq)]
+pub struct BankAccountError(pub String);
 
 impl Display for BankAccountError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write(f, self.0)
+        write!(f, "{}", self.0)
     }
 }
 
