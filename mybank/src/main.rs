@@ -1,12 +1,14 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use anyhow::{Context, Result};
 use cqrs_es::{persist::PersistedEventStore, CqrsFramework, Query};
 use domain::accounts::{
-    aggregate::BankAccount, commands::BankAccountCommand, queries::SimpleLoggingQuery,
+    aggregate::BankAccount,
+    commands::BankAccountCommand,
+    queries::{AccountQuery, SimpleLoggingQuery},
     services::BankAccountService,
 };
-use postgres_es::{default_postgress_pool, PostgresEventRepository};
+use postgres_es::{default_postgress_pool, PostgresEventRepository, PostgresViewRepository};
 use sqlx::{Pool, Postgres};
 
 mod domain;
@@ -23,7 +25,11 @@ async fn main() -> Result<()> {
     let event_store = PersistedEventStore::new_event_store(event_repo);
 
     let simple_logging_query = SimpleLoggingQuery {};
-    let queries: Vec<Box<dyn Query<BankAccount>>> = vec![Box::new(simple_logging_query)];
+    let account_view_repo = Arc::new(PostgresViewRepository::new("account_view", db_pool.clone()));
+    let account_view_query = AccountQuery::new(account_view_repo);
+
+    let queries: Vec<Box<dyn Query<BankAccount>>> =
+        vec![Box::new(simple_logging_query), Box::new(account_view_query)];
     let service = BankAccountService {};
     let cqrs = CqrsFramework::new(event_store, queries, service);
 

@@ -1,7 +1,9 @@
 use async_trait::async_trait;
-use cqrs_es::{EventEnvelope, Query};
+use cqrs_es::{persist::GenericQuery, EventEnvelope, Query, View};
+use postgres_es::PostgresViewRepository;
+use serde::{Deserialize, Serialize};
 
-use super::aggregate::BankAccount;
+use super::{aggregate::BankAccount, events::BankAccountEvent};
 
 pub struct SimpleLoggingQuery {}
 
@@ -12,6 +14,57 @@ impl Query<BankAccount> for SimpleLoggingQuery {
             println!("{}-{}\n{:#?}", aggregate_id, event.sequence, &event.payload);
             println!("metadata => {:#?}", &event.metadata);
             println!("===============================================");
+        }
+    }
+}
+
+pub type AccountQuery = GenericQuery<
+    PostgresViewRepository<BankAccountView, BankAccount>,
+    BankAccountView,
+    BankAccount,
+>;
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub struct BankAccountView {
+    account_id: Option<String>,
+    balance: f64,
+    written_checks: Vec<String>,
+    ledger: Vec<LedgerEntry>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct LedgerEntry {
+    description: String,
+    amount: f64,
+}
+
+impl LedgerEntry {
+    fn new(description: &str, amount: f64) -> Self {
+        Self {
+            description: description.to_string(),
+            amount,
+        }
+    }
+}
+
+impl View<BankAccount> for BankAccountView {
+    fn update(&mut self, event: &EventEnvelope<BankAccount>) {
+        match &event.payload {
+            BankAccountEvent::AccountOpened { account_id } => {
+                self.account_id = Some(account_id.clone());
+            }
+
+            BankAccountEvent::CustomerDepositedMoney { amount, balance } => {
+                self.ledger.push(LedgerEntry::new("deposit", *amount));
+                self.balance = *balance;
+            }
+
+            BankAccountEvent::CustomerWithdrewMoney { amount, balance } => {
+                self.ledger.push(LedgerEntry::new("withdrawal", *amount));
+                self.balance = *balance;
+            }
+
+            _ => {}
         }
     }
 }
