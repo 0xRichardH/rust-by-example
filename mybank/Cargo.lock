@@ -734,6 +734,7 @@ dependencies = [
  "cqrs-es",
  "postgres-es",
  "serde",
+ "sqlx",
  "tokio",
 ]
 
