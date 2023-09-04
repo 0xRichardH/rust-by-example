@@ -26,7 +26,9 @@ async fn main() -> Result<()> {
 
     let simple_logging_query = SimpleLoggingQuery {};
     let account_view_repo = Arc::new(PostgresViewRepository::new("account_view", db_pool.clone()));
-    let account_view_query = AccountQuery::new(account_view_repo);
+    let mut account_view_query = AccountQuery::new(account_view_repo);
+
+    account_view_query.use_error_handler(Box::new(|e| eprintln!("{}", e)));
 
     let queries: Vec<Box<dyn Query<BankAccount>>> =
         vec![Box::new(simple_logging_query), Box::new(account_view_query)];
